@@ -1,0 +1,68 @@
+{
+  "meta": {
+    "title": "ski.svgn.org — 滑雪战绩卡",
+    "description": "上传滑呗截图，生成你的专属滑雪战绩卡片。"
+  },
+  "common": {
+    "brand": "ski.svgn.org",
+    "loading": "加载中…"
+  },
+  "language": {
+    "label": "语言",
+    "zh": "中文",
+    "en": "English"
+  },
+  "home": {
+    "title": "滑雪战绩卡",
+    "subtitle": "上传滑呗截图，生成你的专属战绩卡。冷峻质感，适合朋友圈与小红书分享。",
+    "skipManual": "跳过解析，手动填写",
+    "manualHint": "手动填写兜底（解析失败或想完全自定义时使用）",
+    "manualTitle": "手动填写",
+    "manualDesc": "提交后将跳转到预览页。",
+    "ctaPreview": "生成预览",
+    "footerResult": "已有数据？直接打开预览页"
+  },
+  "result": {
+    "title": "战绩卡预览",
+    "subtitle": "左侧为 1080×1920 竖版画布预览；右侧可微调数据后下载 PNG。",
+    "backUpload": "返回上传",
+    "download": "下载 PNG",
+    "mobileHint": "移动端可长按图片保存到相册（视浏览器而定）"
+  },
+  "upload": {
+    "dropTitle": "拖拽截图到此处，或点击上传",
+    "formats": "支持 JPG / PNG / WEBP，最大 10MB",
+    "choose": "选择图片",
+    "parsing": "正在调用视觉模型解析截图…",
+    "errType": "请上传 JPG / PNG / WEBP 图片",
+    "errSize": "文件需小于 10MB",
+    "errParse": "解析失败，可改用下方手动填写",
+    "errNetwork": "网络异常，可改用下方手动填写"
+  },
+  "form": {
+    "titleDefault": "滑行数据",
+    "descDefault": "可直接修改字段，卡片会实时更新。",
+    "titleManual": "手动填写",
+    "descManual": "提交后将跳转到预览页。",
+    "resort": "雪场名称",
+    "resortPh": "例如：万龙滑雪场",
+    "date": "日期",
+    "duration": "时长",
+    "durationPh": "2h 30m",
+    "distance": "距离（km）",
+    "speed": "最高速度（km/h）",
+    "vertical": "垂直落差（m）"
+  },
+  "validation": {
+    "resort": "填写雪场名称",
+    "date": "使用 YYYY-MM-DD",
+    "duration": "填写时长"
+  },
+  "card": {
+    "kmh": "km/h",
+    "duration": "时长",
+    "distance": "距离",
+    "vertical": "落差",
+    "numberLocale": "zh-CN"
+  }
+}

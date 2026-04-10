@@ -1,0 +1,68 @@
+{
+  "meta": {
+    "title": "ski.svgn.org — Ski Run Card",
+    "description": "Upload a ski app screenshot and generate your shareable run card."
+  },
+  "common": {
+    "brand": "ski.svgn.org",
+    "loading": "Loading…"
+  },
+  "language": {
+    "label": "Language",
+    "zh": "中文",
+    "en": "English"
+  },
+  "home": {
+    "title": "Ski Run Card",
+    "subtitle": "Upload a Huabei (or similar) screenshot to generate your card—bold, cold-toned, ready for social feeds.",
+    "skipManual": "Skip parsing, enter manually",
+    "manualHint": "Manual entry when parsing fails or you want full control.",
+    "manualTitle": "Manual entry",
+    "manualDesc": "You’ll be taken to the preview page after submit.",
+    "ctaPreview": "Open preview",
+    "footerResult": "Already have data? Open preview"
+  },
+  "result": {
+    "title": "Preview",
+    "subtitle": "Left: 1080×1920 canvas. Right: tweak fields, then download PNG.",
+    "backUpload": "Back to upload",
+    "download": "Download PNG",
+    "mobileHint": "On mobile, long-press the image to save (browser-dependent)."
+  },
+  "upload": {
+    "dropTitle": "Drop a screenshot here, or click to upload",
+    "formats": "JPG / PNG / WEBP, max 10MB",
+    "choose": "Choose image",
+    "parsing": "Parsing screenshot with vision…",
+    "errType": "Please upload JPG, PNG, or WEBP",
+    "errSize": "File must be under 10MB",
+    "errParse": "Couldn’t parse—try manual entry below",
+    "errNetwork": "Network error—try manual entry below"
+  },
+  "form": {
+    "titleDefault": "Run data",
+    "descDefault": "Edits update the card in real time.",
+    "titleManual": "Manual entry",
+    "descManual": "You’ll go to the preview page after submit.",
+    "resort": "Resort",
+    "resortPh": "e.g. Niseko United",
+    "date": "Date",
+    "duration": "Duration",
+    "durationPh": "2h 30m",
+    "distance": "Distance (km)",
+    "speed": "Max speed (km/h)",
+    "vertical": "Vertical (m)"
+  },
+  "validation": {
+    "resort": "Enter resort name",
+    "date": "Use YYYY-MM-DD",
+    "duration": "Enter duration"
+  },
+  "card": {
+    "kmh": "km/h",
+    "duration": "Duration",
+    "distance": "Distance",
+    "vertical": "Vert",
+    "numberLocale": "en-US"
+  }
+}
