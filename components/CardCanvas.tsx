@@ -9,6 +9,7 @@ import { getSkiTheme } from "@/lib/themes/ski";
 
 export type CardCanvasHandle = {
   downloadPng: () => void;
+  shareMobile: () => Promise<boolean>;
 };
 
 type Props = {
@@ -67,6 +68,37 @@ export const CardCanvas = forwardRef<CardCanvasHandle, Props>(function CardCanva
   }, [aspect, labels, session, theme, watermark]);
 
   useImperativeHandle(ref, () => ({
+    shareMobile: async () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return false;
+      return new Promise<boolean>((resolve) => {
+        canvas.toBlob(
+          async (blob) => {
+            if (!blob) { resolve(false); return; }
+            const file = new File([blob], fileNameFromCard(session), { type: "image/png" });
+            if (navigator.canShare?.({ files: [file] })) {
+              try {
+                await navigator.share({ files: [file] });
+                resolve(true);
+              } catch {
+                resolve(false);
+              }
+            } else {
+              // Fallback: trigger download
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = fileNameFromCard(session);
+              a.click();
+              URL.revokeObjectURL(url);
+              resolve(true);
+            }
+          },
+          "image/png",
+          1,
+        );
+      });
+    },
     downloadPng: () => {
       const canvas = canvasRef.current;
       if (!canvas) return;

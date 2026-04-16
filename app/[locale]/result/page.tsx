@@ -25,6 +25,7 @@ export default function ResultPage() {
   const [aiImage, setAiImage] = useState<string | null>(null);
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [saveToast, setSaveToast] = useState<string | null>(null);
   const [userPhoto, setUserPhoto] = useState<File | null>(null);
   const [userPhotoPreview, setUserPhotoPreview] = useState<string | null>(null);
   const canvasRef = useRef<CardCanvasHandle>(null);
@@ -69,8 +70,16 @@ export default function ResultPage() {
     return () => mq.removeEventListener("change", apply);
   }, []);
 
-  const onDownload = () => {
-    canvasRef.current?.downloadPng();
+  const onDownload = async () => {
+    if (isMobile) {
+      const ok = await canvasRef.current?.shareMobile();
+      if (ok) {
+        setSaveToast(t("savedHint"));
+        setTimeout(() => setSaveToast(null), 3000);
+      }
+    } else {
+      canvasRef.current?.downloadPng();
+    }
   };
 
   const onPickPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -138,9 +147,22 @@ export default function ResultPage() {
     }
   };
 
-  const onDownloadAi = () => {
+  const onDownloadAi = async () => {
     if (!aiImage) return;
     const v = form.getValues();
+    if (isMobile) {
+      try {
+        const res = await fetch(aiImage);
+        const blob = await res.blob();
+        const file = new File([blob], `ski-share-${v.dayDate}.png`, { type: "image/png" });
+        if (navigator.canShare?.({ files: [file] })) {
+          await navigator.share({ files: [file] });
+          setSaveToast(t("savedHint"));
+          setTimeout(() => setSaveToast(null), 3000);
+          return;
+        }
+      } catch { /* fall through */ }
+    }
     const a = document.createElement("a");
     a.href = aiImage;
     a.download = `ski-share-${v.dayDate}.png`;
@@ -204,6 +226,12 @@ export default function ResultPage() {
                 <Snowflake className="h-3.5 w-3.5 text-accent/70" />
                 {t("mobileHint")}
               </p>
+            )}
+
+            {saveToast && (
+              <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 animate-[fade-up_0.3s_ease-out] rounded-xl border border-accent/20 bg-surface/95 px-5 py-3 text-sm font-medium text-accent shadow-lg backdrop-blur-md">
+                ✅ {saveToast}
+              </div>
             )}
 
             <div className="glass-shimmer space-y-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5 backdrop-blur-md">
@@ -310,7 +338,7 @@ export default function ResultPage() {
               type="button"
               size="lg"
               className="w-full gap-2 md:w-auto"
-              onClick={onDownload}
+              onClick={() => void onDownload()}
             >
               <Download className="h-4 w-4" />
               {t("download")}
