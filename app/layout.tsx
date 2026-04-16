@@ -1,4 +1,11 @@
 import "./globals.css";
+import type { Viewport } from "next";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+};
 
 export default function RootLayout({
   children,
@@ -16,7 +23,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-screen bg-[#0A1628] font-sans antialiased text-[#E8F4FD]">{children}</body>
+      <body className="min-h-screen bg-surface font-sans antialiased text-on-surface" data-sport="ski">{children}</body>
     </html>
   );
 }

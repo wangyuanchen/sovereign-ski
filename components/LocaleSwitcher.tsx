@@ -17,7 +17,7 @@ export function LocaleSwitcher({ className }: Props) {
   return (
     <div
       className={cn(
-        "inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] p-0.5 text-xs font-medium text-white/70",
+        "inline-flex items-center gap-0.5 rounded-full border border-white/[0.08] bg-white/[0.03] p-0.5 text-xs font-medium backdrop-blur-sm",
         className,
       )}
       role="group"
@@ -29,10 +29,10 @@ export function LocaleSwitcher({ className }: Props) {
           href={pathname}
           locale={loc}
           className={cn(
-            "rounded-full px-2.5 py-1 transition",
+            "rounded-full px-3 py-1.5 transition",
             locale === loc
-              ? "bg-[#00D4FF]/20 text-[#E8F4FD] shadow-[0_0_16px_rgba(0,212,255,0.25)]"
-              : "text-white/50 hover:text-[#00D4FF]/90",
+              ? "bg-accent/20 text-on-surface shadow-[0_0_16px_rgb(var(--accent)_/_0.25)]"
+              : "text-white/50 hover:text-accent/90",
           )}
         >
           {t(loc)}

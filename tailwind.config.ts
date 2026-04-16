@@ -17,6 +17,11 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        /* ── Sport-skin semantic tokens ── */
+        accent: "rgb(var(--accent) / <alpha-value>)",
+        surface: "rgb(var(--surface) / <alpha-value>)",
+        "on-surface": "rgb(var(--on-surface) / <alpha-value>)",
+        "accent-light": "rgb(var(--accent-light) / <alpha-value>)",
       },
       animation: {
         "fade-up": "fade-up 0.75s ease-out both",

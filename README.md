@@ -1,23 +1,23 @@
 # sovereign-ski
 
-滑雪战绩卡片生成器：上传 App 截图（如滑呗），用 Claude Vision 解析数据，在 Canvas 上生成 1080×1920 竖版分享图并下载 PNG。支持**中文 / English** 界面。
+滑雪战绩卡片生成器：上传 App 截图（如滑呗）解析数据，或手动填写**当日多段滑行**；预览页可选**预设主题**与**多比例导出**（本地 Canvas，不耗 token），按需再调用图像模型生成 AI 配图。架构上预留 **`SportId`**，便于以后接入其他运动。支持**中文 / English** 界面。
 
 线上站点示例：[ski.svgn.org](https://ski.svgn.org)（若已部署）
 
 ## 功能
 
 - 拖拽或点击上传截图（JPG / PNG / WEBP，最大 10MB）
-- 服务端调用 Anthropic Claude Vision 解析滑行数据
-- 解析失败时可手动填写表单（react-hook-form + zod）
-- Canvas 生成冷色运动风格卡片，支持下载 PNG
-- 可选：将匿名记录写入 MySQL（PlanetScale 等），便于后续统计
+- 服务端经 [OpenRouter](https://openrouter.ai/) 调用多模态模型解析**单场**数据（多段需手动添加）
+- 表单支持**当日多场**汇总；**主题**（默认 / 夜场 / 粉雪）与**导出比例**（9:16、3:4、1:1）均为本地 Canvas 渲染
+- 可选：按需调用图像模型生成朋友圈风格图（`OPENROUTER_IMAGE_MODEL`）
+- 可选：将匿名记录写入 MySQL（每场一行，同日多场多条）
 
 ## 技术栈
 
 - Next.js 14 App Router · TypeScript · pnpm
 - Tailwind CSS · shadcn/ui 风格组件 · Lucide
 - next-intl（中英双语）
-- Anthropic API（截图解析）
+- OpenRouter（OpenAI 兼容 API，截图解析）
 - Drizzle ORM + MySQL（可选）
 
 ## 本地开发
@@ -33,7 +33,9 @@ cp .env.example .env.local
 
 | 变量 | 说明 |
 |------|------|
-| `ANTHROPIC_API_KEY` | 必填，截图解析 |
+| `OPENROUTER_API_KEY` | 必填，[OpenRouter](https://openrouter.ai/) API Key |
+| `OPENROUTER_PARSE_MODEL` | 可选，解析截图用多模态模型，默认 `google/gemini-2.5-flash` |
+| `OPENROUTER_IMAGE_MODEL` | 可选，AI 朋友圈配图（图像生成），默认 `google/gemini-2.5-flash-image` |
 | `DATABASE_URL` | 可选，匿名存储滑行记录 |
 | `NEXT_PUBLIC_APP_URL` | 站点 URL（SEO / metadata） |
 
@@ -67,6 +69,8 @@ messages/            # next-intl 文案
 ```
 
 ## 部署
+
+### Vercel
 
 推荐 [Vercel](https://vercel.com)：导入仓库后配置环境变量，构建命令 `pnpm build`，输出目录默认即可。
 

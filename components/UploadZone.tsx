@@ -4,12 +4,12 @@ import { useCallback, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Loader2, Mountain, Upload } from "lucide-react";
 import type { ParsedSkiPartial } from "@/lib/types";
-import { STORAGE_KEY } from "@/lib/types";
+import { STORAGE_KEY, parsedPartialToSession } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "@/i18n/navigation";
 
-const ACCEPT = "image/jpeg,image/png,image/webp";
+const ACCEPT = "image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif";
 const MAX_BYTES = 10 * 1024 * 1024;
 
 type Props = {
@@ -29,7 +29,10 @@ export function UploadZone({ onManual, className }: Props) {
   const upload = useCallback(
     async (file: File) => {
       setError(null);
-      if (!ACCEPT.split(",").includes(file.type)) {
+      const mime = file.type || "";
+      const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+      const validType = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"].includes(mime) || ["heic", "heif"].includes(ext);
+      if (!validType) {
         setError(t("errType"));
         return;
       }
@@ -55,7 +58,7 @@ export function UploadZone({ onManual, className }: Props) {
           return;
         }
 
-        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(json.data));
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(parsedPartialToSession(json.data)));
         router.push("/result");
       } catch {
         setError(t("errNetwork"));
@@ -101,26 +104,29 @@ export function UploadZone({ onManual, className }: Props) {
         onDragLeave={() => setDrag(false)}
         onDrop={onDrop}
         className={cn(
-          "group relative overflow-hidden rounded-2xl border border-dashed border-white/20 bg-white/[0.02] px-6 py-14 text-center transition-all",
-          drag && "border-[#00D4FF]/60 shadow-[0_0_40px_rgba(0,212,255,0.18)]",
+          "glass-shimmer group relative overflow-hidden rounded-2xl border-2 border-dashed border-white/15 bg-white/[0.03] px-6 py-16 text-center backdrop-blur-sm transition-all duration-300 hover:border-accent/30 hover:bg-white/[0.05] hover:shadow-[0_0_60px_rgb(var(--accent)_/_0.12)] active:bg-white/[0.06]",
+          drag && "border-accent/60 bg-accent/[0.06] shadow-[0_0_60px_rgb(var(--accent)_/_0.25)] scale-[1.01]",
           busy && "pointer-events-none opacity-70",
         )}
       >
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(900px_circle_at_20%_0%,rgba(0,212,255,0.14),transparent_55%)] opacity-80" />
-        <div className="relative mx-auto flex max-w-xl flex-col items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-[#00D4FF] shadow-[0_0_30px_rgba(0,212,255,0.18)]">
-            {busy ? <Loader2 className="h-7 w-7 animate-spin" /> : <Mountain className="h-7 w-7" />}
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(600px_circle_at_50%_0%,rgb(var(--accent)_/_0.12),transparent_60%)]" />
+        <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-b from-white/[0.04] to-transparent" />
+        <div className="relative mx-auto flex max-w-xl flex-col items-center gap-5">
+          <div className="relative">
+            <div className="absolute inset-0 animate-ping rounded-2xl bg-accent/10" style={{ animationDuration: '3s' }} />
+            <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-accent/20 bg-gradient-to-br from-accent/15 to-accent/5 text-accent shadow-[0_0_40px_rgb(var(--accent)_/_0.2)]">
+              {busy ? <Loader2 className="h-7 w-7 animate-spin" /> : <Mountain className="h-7 w-7" />}
+            </div>
           </div>
           <div className="space-y-2">
-            <p className="text-lg font-semibold tracking-tight text-[#E8F4FD]">{t("dropTitle")}</p>
-            <p className="text-sm text-white/55">{t("formats")}</p>
+            <p className="text-lg font-bold tracking-tight text-on-surface">{t("dropTitle")}</p>
+            <p className="text-sm text-white/45">{t("formats")}</p>
           </div>
 
           <Button
             type="button"
-            variant="outline"
             size="lg"
-            className="gap-2"
+            className="gap-2 shadow-[0_0_30px_rgb(var(--accent)_/_0.3)]"
             disabled={busy}
             onClick={() => inputRef.current?.click()}
           >
@@ -128,8 +134,13 @@ export function UploadZone({ onManual, className }: Props) {
             {t("choose")}
           </Button>
 
-          {busy && <p className="text-sm text-[#00D4FF]/90">{t("parsing")}</p>}
-          {error && <p className="text-sm text-rose-300/90">{error}</p>}
+          {busy && (
+            <div className="flex items-center gap-2 text-sm text-accent">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              {t("parsing")}
+            </div>
+          )}
+          {error && <p className="rounded-lg bg-rose-500/10 px-3 py-1.5 text-sm text-rose-300">{error}</p>}
         </div>
       </div>
     </div>
