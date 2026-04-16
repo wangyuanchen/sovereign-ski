@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Flame, Mountain, TreePine, Waves } from "lucide-react";
+import { Mountain } from "lucide-react";
 import type { SportId } from "./types";
 
 export type ParticleType = "snow" | "bubble" | "spark" | "leaf";

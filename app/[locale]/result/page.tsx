@@ -224,9 +224,12 @@ export default function ResultPage() {
                 {userPhoto ? (
                   <div className="relative inline-block">
                     {userPhotoPreview ? (
-                      <img
+                      <Image
                         src={userPhotoPreview}
                         alt=""
+                        width={80}
+                        height={80}
+                        unoptimized
                         className="h-20 w-20 rounded-xl border border-white/10 object-cover"
                       />
                     ) : (
