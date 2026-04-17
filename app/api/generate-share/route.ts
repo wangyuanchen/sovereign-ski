@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { eq, and, sql } from "drizzle-orm";
+import { put } from "@vercel/blob";
 import {
   OPENROUTER_BASE,
   extractImageDataUrlFromCompletion,
@@ -14,6 +15,7 @@ import { getAnonFingerprint } from "@/lib/fingerprint";
 import { watermarkToBuffer, compressToBuffer, dataUrlToBuffer } from "@/lib/watermark";
 import { getDb } from "@/lib/db";
 import { anonDailyUsage } from "@/lib/db/schema";
+import { moderateImage } from "@/lib/moderation";
 
 export const runtime = "nodejs";
 
@@ -105,6 +107,15 @@ export async function POST(req: Request) {
       const buf = Buffer.from(await photo.arrayBuffer());
       const { dataUrl } = await toModelDataUrl(buf, photo.type);
       userPhotoDataUrl = dataUrl;
+
+      // Content moderation on user photo
+      const modResult = await moderateImage(dataUrl);
+      if (!modResult.safe) {
+        return NextResponse.json(
+          { ok: false, error: "content_rejected", reason: modResult.reason },
+          { status: 451 },
+        );
+      }
     }
   } else {
     try {
@@ -163,7 +174,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "no_image" }, { status: 502 });
     }
 
-    // Convert data URL to buffer, apply watermark or compress, return as binary
+    // Convert data URL to buffer, apply watermark or compress
     let imgBuffer: Buffer;
     if (addWatermark) {
       try {
@@ -186,15 +197,15 @@ export async function POST(req: Request) {
       await recordAnonUsage(fingerprint, td);
     }
 
-    // Return binary image directly — avoids base64 bloat and Vercel payload limit
-    return new Response(new Uint8Array(imgBuffer), {
-      status: 200,
-      headers: {
-        "Content-Type": "image/jpeg",
-        "Content-Length": String(imgBuffer.byteLength),
-        "X-Watermark": addWatermark ? "1" : "0",
-      },
+    // Upload to Vercel Blob and return URL — avoids Vercel payload limit entirely
+    const filename = `share/${td}/${Date.now()}.jpg`;
+    const blob = await put(filename, imgBuffer, {
+      access: "public",
+      contentType: "image/jpeg",
+      addRandomSuffix: true,
     });
+
+    return NextResponse.json({ ok: true, url: blob.url, watermark: addWatermark });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ ok: false, error: "upstream" }, { status: 502 });

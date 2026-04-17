@@ -36,6 +36,7 @@
     "aiShareBusy": "Generating…",
     "aiShareFreeHint": "1 free use per day (watermarked). Sign in & buy credits for watermark-free.",
     "aiShareErr": "Generation failed, please retry",
+    "aiShareContentErr": "Photo content not allowed. Please use a different photo.",
     "aiShareDownload": "Download Share Image"
   },
   "result": {
@@ -51,6 +52,7 @@
     "aiShareBusy": "Generating…",
     "aiShareFreeHint": "1 free use per day (watermarked). Sign in & buy credits for watermark-free.",
     "aiShareErr": "Generation failed. Retry later or check OPENROUTER_IMAGE_MODEL.",
+    "aiShareContentErr": "Photo content not allowed. Please use a different photo.",
     "aiShareDownload": "Download share image",
     "aiSharePhoto": "Upload your photo (optional)",
     "aiSharePhotoHint": "Stats will be overlaid onto your photo",

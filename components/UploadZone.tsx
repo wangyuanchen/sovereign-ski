@@ -72,7 +72,7 @@ export function UploadZone({ onManual, onParsed, className }: Props) {
         };
 
         if (!res.ok || !json.ok || !json.data) {
-          setError(t("errParse"));
+          setError(res.status === 451 ? t("errContent") : t("errParse"));
           setStep("idle");
           onManual?.();
           return;

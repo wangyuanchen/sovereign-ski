@@ -170,14 +170,20 @@ export default function HomePage() {
         setAiError(ta("noCredits"));
         return;
       }
+      if (res.status === 451) {
+        setAiError(t("aiShareContentErr"));
+        return;
+      }
       if (!res.ok) {
         setAiError(t("aiShareErr"));
         return;
       }
-      // Response is binary image
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      setAiImage(url);
+      const json = (await res.json()) as { ok?: boolean; url?: string };
+      if (!json.ok || !json.url) {
+        setAiError(t("aiShareErr"));
+        return;
+      }
+      setAiImage(json.url);
     } catch {
       setAiError(t("aiShareErr"));
     } finally {
@@ -197,9 +203,7 @@ export default function HomePage() {
           await navigator.share({ files: [file] });
           return;
         }
-      } catch {
-        /* fall through */
-      }
+      } catch { /* fall through */ }
     }
     const a = document.createElement("a");
     a.href = aiImage;

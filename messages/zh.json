@@ -36,6 +36,7 @@
     "aiShareBusy": "正在生成分享图…",
     "aiShareFreeHint": "每天可免费生成 1 次（带水印），登录购买次数可去水印",
     "aiShareErr": "生成失败，请稍后重试",
+    "aiShareContentErr": "照片内容不合规，请更换照片",
     "aiShareDownload": "下载分享图"
   },
   "result": {
@@ -51,6 +52,7 @@
     "aiShareBusy": "正在生成分享图…",
     "aiShareFreeHint": "每天可免费生成 1 次（带水印），登录购买次数可去水印",
     "aiShareErr": "生成失败，请稍后重试或检查 OPENROUTER_IMAGE_MODEL。",
+    "aiShareContentErr": "照片内容不合规，请更换照片",
     "aiShareDownload": "下载分享图",
     "aiSharePhoto": "上传你的照片（可选）",
     "aiSharePhotoHint": "上传后数据会叠加到你的照片上",
@@ -65,6 +67,7 @@
     "errSize": "文件需小于 10MB",
     "errParse": "解析失败，可改用下方手动填写",
     "errNetwork": "网络异常，可改用下方手动填写",
+    "errContent": "图片内容不合规，请上传滑雪相关截图",
     "stepUploading": "正在上传截图…",
     "stepParsing": "智能识别截图数据中…",
     "stepParsed": "数据识别完成 ✓",

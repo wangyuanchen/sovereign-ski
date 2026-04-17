@@ -134,13 +134,20 @@ export default function ResultPage() {
         setAiError(ta("noCredits"));
         return;
       }
+      if (res.status === 451) {
+        setAiError(t("aiShareContentErr"));
+        return;
+      }
       if (!res.ok) {
         setAiError(t("aiShareErr"));
         return;
       }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      setAiImage(url);
+      const json = (await res.json()) as { ok?: boolean; url?: string };
+      if (!json.ok || !json.url) {
+        setAiError(t("aiShareErr"));
+        return;
+      }
+      setAiImage(json.url);
     } catch {
       setAiError(t("aiShareErr"));
     } finally {

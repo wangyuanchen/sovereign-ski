@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getOpenRouterClient } from "@/lib/openrouter";
 import { ACCEPTED_IMAGE_TYPES, toModelDataUrl } from "@/lib/image-utils";
 import { parseAssistantSkiJson } from "@/lib/parser";
+import { moderateImage } from "@/lib/moderation";
 
 export const runtime = "nodejs";
 
@@ -76,6 +77,15 @@ export async function POST(req: Request) {
 
   const buf = Buffer.from(await file.arrayBuffer());
   const { dataUrl } = await toModelDataUrl(buf, type);
+
+  // Content moderation
+  const modResult = await moderateImage(dataUrl);
+  if (!modResult.safe) {
+    return NextResponse.json(
+      { ok: false, error: "content_rejected", reason: modResult.reason },
+      { status: 451 },
+    );
+  }
 
   const model = resolveParseModel();
 
