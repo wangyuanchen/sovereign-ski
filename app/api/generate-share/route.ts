@@ -119,7 +119,26 @@ export async function POST(req: Request) {
     }
   } else {
     try {
-      sessionData = await req.json();
+      const json = await req.json();
+      // New path: JSON body with optional photoUrl (Vercel Blob URL)
+      if (json.photoUrl && typeof json.photoUrl === "string") {
+        const photoRes = await fetch(json.photoUrl);
+        if (photoRes.ok) {
+          const buf = Buffer.from(await photoRes.arrayBuffer());
+          const mime = photoRes.headers.get("content-type") || "image/jpeg";
+          const { dataUrl } = await toModelDataUrl(buf, mime);
+          userPhotoDataUrl = dataUrl;
+
+          const modResult = await moderateImage(dataUrl);
+          if (!modResult.safe) {
+            return NextResponse.json(
+              { ok: false, error: "content_rejected", reason: modResult.reason },
+              { status: 451 },
+            );
+          }
+        }
+      }
+      sessionData = json;
     } catch {
       return NextResponse.json({ ok: false, error: "invalid_body" }, { status: 400 });
     }
@@ -157,7 +176,6 @@ export async function POST(req: Request) {
         model,
         messages: [{ role: "user", content }],
         modalities: ["image", "text"],
-        max_tokens: 512,
       }),
     });
 

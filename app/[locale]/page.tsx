@@ -162,10 +162,21 @@ export default function HomePage() {
     setAiError(null);
     try {
       const v = form.getValues();
-      const fd = new FormData();
-      fd.set("data", JSON.stringify({ ...v, locale: locale === "en" ? "en" : "zh" }));
-      if (userPhoto) fd.set("userPhoto", userPhoto);
-      const res = await fetch("/api/generate-share", { method: "POST", body: fd });
+      let photoUrl: string | undefined;
+      if (userPhoto) {
+        const { upload } = await import("@vercel/blob/client");
+        const blob = await upload(`user-photos/${Date.now()}-${userPhoto.name}`, userPhoto, {
+          access: "public",
+          handleUploadUrl: "/api/upload-token",
+        });
+        photoUrl = blob.url;
+      }
+      const body = { ...v, locale: locale === "en" ? "en" : "zh", photoUrl };
+      const res = await fetch("/api/generate-share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
       if (res.status === 402) {
         setAiError(ta("noCredits"));
         return;
