@@ -146,7 +146,7 @@ export async function POST(req: Request) {
         model,
         messages: [{ role: "user", content }],
         modalities: ["image", "text"],
-        max_tokens: 4096,
+        max_tokens: 512,
       }),
     });
 
