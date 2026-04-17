@@ -51,7 +51,7 @@
     "aiShareCta": "生成分享图",
     "aiShareBusy": "正在生成分享图…",
     "aiShareFreeHint": "每天可免费生成 1 次（带水印），登录购买次数可去水印",
-    "aiShareErr": "生成失败，请稍后重试或检查 OPENROUTER_IMAGE_MODEL。",
+    "aiShareErr": "生成失败，请稍后重试。",
     "aiShareContentErr": "照片内容不合规，请更换照片",
     "aiShareDownload": "下载分享图",
     "aiSharePhoto": "上传你的照片（可选）",

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getOpenRouterClient } from "@/lib/openrouter";
+import { getGeminiClient, extractTextFromResponse } from "@/lib/gemini";
 import { ACCEPTED_IMAGE_TYPES, toModelDataUrl } from "@/lib/image-utils";
 import { parseAssistantSkiJson } from "@/lib/parser";
 import { moderateImage } from "@/lib/moderation";
@@ -42,11 +42,11 @@ Example:
 
 /** 解析截图专用视觉模型；未设置时使用默认 */
 function resolveParseModel(): string {
-  return process.env.OPENROUTER_PARSE_MODEL?.trim() || "google/gemini-2.5-flash";
+  return process.env.GEMINI_PARSE_MODEL?.trim() || "gemini-2.5-flash";
 }
 
 export async function POST(req: Request) {
-  const client = getOpenRouterClient();
+  const client = getGeminiClient();
   if (!client) {
     return NextResponse.json({ ok: false, error: "missing_api_key" }, { status: 500 });
   }
@@ -89,24 +89,29 @@ export async function POST(req: Request) {
 
   const model = resolveParseModel();
 
+  // Extract base64 from data URL
+  const b64Match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+  if (!b64Match) {
+    return NextResponse.json({ ok: false, error: "bad_image" }, { status: 400 });
+  }
+
   let text = "";
   try {
-    const completion = await client.chat.completions.create({
+    const response = await client.models.generateContent({
       model,
-      max_tokens: 1024,
-      messages: [
+      contents: [
         {
           role: "user",
-          content: [
-            { type: "image_url", image_url: { url: dataUrl } },
-            { type: "text", text: prompt },
+          parts: [
+            { inlineData: { mimeType: b64Match[1], data: b64Match[2] } },
+            { text: prompt },
           ],
         },
       ],
     });
 
-    const raw = completion.choices[0]?.message?.content;
-    if (typeof raw !== "string" || !raw.trim()) {
+    const raw = extractTextFromResponse(response as never);
+    if (!raw?.trim()) {
       return NextResponse.json({ ok: false, error: "no_text" }, { status: 502 });
     }
     text = raw;

@@ -1,29 +1,16 @@
 import OpenAI from "openai";
 
-export const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
+export const LLM_BASE =
+  process.env.LLM_API_BASE?.replace(/\/+$/, "") || "https://www.dmxapi.com/v1";
 
-export function getOpenRouterClient(): OpenAI | null {
-  const key = process.env.OPENROUTER_API_KEY;
+export function getLLMClient(): OpenAI | null {
+  const key = process.env.LLM_API_KEY;
   if (!key) return null;
 
-  const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://ski.svgn.org";
-
   return new OpenAI({
-    baseURL: OPENROUTER_BASE,
+    baseURL: LLM_BASE,
     apiKey: key,
-    defaultHeaders: {
-      "HTTP-Referer": siteUrl,
-      "X-Title": "sovereign-ski",
-    },
   });
-}
-
-export function openRouterHeaders(): Record<string, string> {
-  const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://ski.svgn.org";
-  return {
-    "HTTP-Referer": siteUrl,
-    "X-Title": "sovereign-ski",
-  };
 }
 
 /** Best-effort: OpenRouter image models return base64 data URLs in varying shapes. */

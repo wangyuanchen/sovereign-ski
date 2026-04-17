@@ -1,11 +1,7 @@
 import { NextResponse } from "next/server";
 import { eq, and, sql } from "drizzle-orm";
 import { put } from "@vercel/blob";
-import {
-  OPENROUTER_BASE,
-  extractImageDataUrlFromCompletion,
-  openRouterHeaders,
-} from "@/lib/openrouter";
+import { getGeminiClient, extractImagesFromResponse } from "@/lib/gemini";
 import { ACCEPTED_IMAGE_TYPES, toModelDataUrl } from "@/lib/image-utils";
 import { generateShareBodySchema } from "@/lib/schema";
 import { buildShareImagePrompt } from "@/lib/share-image-prompt";
@@ -45,8 +41,8 @@ async function recordAnonUsage(fingerprint: string, today: string) {
 }
 
 export async function POST(req: Request) {
-  const key = process.env.OPENROUTER_API_KEY;
-  if (!key) {
+  const gemini = getGeminiClient();
+  if (!gemini) {
     return NextResponse.json({ ok: false, error: "missing_api_key" }, { status: 500 });
   }
 
@@ -154,41 +150,30 @@ export async function POST(req: Request) {
   const promptText = buildShareImagePrompt(sessionPayload, locale, !!userPhotoDataUrl);
 
   const model =
-    process.env.OPENROUTER_IMAGE_MODEL?.trim() || "google/gemini-2.5-flash-image";
+    process.env.GEMINI_IMAGE_MODEL?.trim() || "gemini-2.5-flash-image";
 
-  /* ── Build message content (text-only or multimodal) ── */
-  const content: Array<{ type: string; text?: string; image_url?: { url: string } }> = [
-    { type: "text", text: promptText },
+  /* ── Build Gemini parts ── */
+  const parts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> = [
+    { text: promptText },
   ];
   if (userPhotoDataUrl) {
-    content.push({ type: "image_url", image_url: { url: userPhotoDataUrl } });
+    const m = userPhotoDataUrl.match(/^data:([^;]+);base64,(.+)$/);
+    if (m) parts.push({ inlineData: { mimeType: m[1], data: m[2] } });
   }
 
   try {
-    const res = await fetch(`${OPENROUTER_BASE}/chat/completions`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${key}`,
-        "Content-Type": "application/json",
-        ...openRouterHeaders(),
+    const response = await gemini.models.generateContent({
+      model,
+      contents: [{ role: "user", parts }],
+      config: {
+        responseModalities: ["IMAGE", "TEXT"],
       },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: "user", content }],
-        modalities: ["image", "text"],
-      }),
     });
 
-    if (!res.ok) {
-      const t = await res.text();
-      console.error("generate-share upstream", res.status, t.slice(0, 1500));
-      return NextResponse.json({ ok: false, error: "upstream" }, { status: 502 });
-    }
-
-    const json = (await res.json()) as unknown;
-    const image = extractImageDataUrlFromCompletion(json);
+    const images = extractImagesFromResponse(response as never);
+    const image = images[0] ?? null;
     if (!image) {
-      console.error("generate-share no_image", JSON.stringify(json).slice(0, 2500));
+      console.error("generate-share no_image", JSON.stringify(response).slice(0, 2500));
       return NextResponse.json({ ok: false, error: "no_image" }, { status: 502 });
     }
 

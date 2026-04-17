@@ -1,9 +1,6 @@
-import {
-  OPENROUTER_BASE,
-  openRouterHeaders,
-} from "@/lib/openrouter";
+import { getGeminiClient, extractTextFromResponse } from "@/lib/gemini";
 
-const MODERATION_MODEL = "google/gemini-2.5-flash";
+const MODERATION_MODEL = "gemini-2.5-flash";
 
 const MODERATION_PROMPT = `You are a content safety classifier. Analyze this image and respond with ONLY a JSON object:
 {"safe": true} or {"safe": false, "reason": "brief reason"}
@@ -32,41 +29,27 @@ export type ModerationResult = { safe: boolean; reason?: string };
  * Fails open (returns safe) on errors to avoid blocking legitimate users.
  */
 export async function moderateImage(dataUrl: string): Promise<ModerationResult> {
-  const key = process.env.OPENROUTER_API_KEY;
-  if (!key) return { safe: true }; // no key = skip moderation
+  const client = getGeminiClient();
+  if (!client) return { safe: true }; // no key = skip moderation
+
+  const b64Match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+  if (!b64Match) return { safe: true };
 
   try {
-    const res = await fetch(`${OPENROUTER_BASE}/chat/completions`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${key}`,
-        "Content-Type": "application/json",
-        ...openRouterHeaders(),
-      },
-      body: JSON.stringify({
-        model: MODERATION_MODEL,
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "image_url", image_url: { url: dataUrl } },
-              { type: "text", text: MODERATION_PROMPT },
-            ],
-          },
-        ],
-        max_tokens: 100,
-      }),
+    const response = await client.models.generateContent({
+      model: MODERATION_MODEL,
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { inlineData: { mimeType: b64Match[1], data: b64Match[2] } },
+            { text: MODERATION_PROMPT },
+          ],
+        },
+      ],
     });
 
-    if (!res.ok) {
-      console.error("moderation upstream error", res.status);
-      return { safe: true }; // fail open
-    }
-
-    const json = (await res.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
-    };
-    const text = json.choices?.[0]?.message?.content?.trim() ?? "";
+    const text = extractTextFromResponse(response as never) ?? "";
 
     // Parse JSON from response (may be wrapped in ```json ... ```)
     const jsonMatch = text.match(/\{[\s\S]*\}/);

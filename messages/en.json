@@ -51,7 +51,7 @@
     "aiShareCta": "Generate share image",
     "aiShareBusy": "Generating…",
     "aiShareFreeHint": "1 free use per day (watermarked). Sign in & buy credits for watermark-free.",
-    "aiShareErr": "Generation failed. Retry later or check OPENROUTER_IMAGE_MODEL.",
+    "aiShareErr": "Generation failed. Please retry later.",
     "aiShareContentErr": "Photo content not allowed. Please use a different photo.",
     "aiShareDownload": "Download share image",
     "aiSharePhoto": "Upload your photo (optional)",
