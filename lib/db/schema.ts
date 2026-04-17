@@ -64,4 +64,19 @@ export const creditPurchases = pgTable("credit_purchases", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+/* ─── Anonymous daily free usage (fingerprint-based) ─── */
+
+export const anonDailyUsage = pgTable(
+  "anon_daily_usage",
+  {
+    /** SHA-256 of IP + User-Agent */
+    fingerprint: varchar("fingerprint", { length: 64 }).notNull(),
+    /** YYYY-MM-DD */
+    day: varchar("day", { length: 10 }).notNull(),
+    count: integer("count").notNull().default(1),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.fingerprint, table.day] })],
+);
+
 

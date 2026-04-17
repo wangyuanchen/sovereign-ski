@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { eq, and, sql } from "drizzle-orm";
 import {
   OPENROUTER_BASE,
   extractImageDataUrlFromCompletion,
@@ -10,11 +10,37 @@ import { generateShareBodySchema } from "@/lib/schema";
 import { buildShareImagePrompt } from "@/lib/share-image-prompt";
 import { auth } from "@/lib/auth";
 import { consumeCredit } from "@/lib/credits";
+import { getAnonFingerprint } from "@/lib/fingerprint";
+import { addWatermarkToImage } from "@/lib/watermark";
+import { getDb } from "@/lib/db";
+import { anonDailyUsage } from "@/lib/db/schema";
 
 export const runtime = "nodejs";
 
 const MAX_PHOTO_BYTES = 8 * 1024 * 1024; // 8 MB
-const ANON_COOKIE = "anon_free_used";
+const ANON_FREE_LIMIT = 1; // free uses per fingerprint per day
+
+async function checkAnonFree(fingerprint: string, today: string): Promise<boolean> {
+  const db = getDb();
+  if (!db) return true; // no DB = allow (dev fallback)
+  const [row] = await db
+    .select({ count: anonDailyUsage.count })
+    .from(anonDailyUsage)
+    .where(and(eq(anonDailyUsage.fingerprint, fingerprint), eq(anonDailyUsage.day, today)));
+  return !row || row.count < ANON_FREE_LIMIT;
+}
+
+async function recordAnonUsage(fingerprint: string, today: string) {
+  const db = getDb();
+  if (!db) return;
+  await db
+    .insert(anonDailyUsage)
+    .values({ fingerprint, day: today, count: 1 })
+    .onConflictDoUpdate({
+      target: [anonDailyUsage.fingerprint, anonDailyUsage.day],
+      set: { count: sql`${anonDailyUsage.count} + 1` },
+    });
+}
 
 export async function POST(req: Request) {
   const key = process.env.OPENROUTER_API_KEY;
@@ -25,29 +51,26 @@ export async function POST(req: Request) {
   /* ── Auth & credits check ── */
   const authSession = await auth();
   let addWatermark = true;
-  let setCookie: { name: string; value: string } | null = null;
+  let consumedCredit = false;
 
-  const jar = await cookies();
-  const freeUsed = jar.get(ANON_COOKIE)?.value;
+  const fingerprint = await getAnonFingerprint();
   const td = new Date().toISOString().slice(0, 10);
-  const freeAvailable = freeUsed !== td;
+  const freeAvailable = await checkAnonFree(fingerprint, td);
 
   if (authSession?.user?.id) {
     // Logged-in: try paid credits first (no watermark)
     const creditResult = await consumeCredit(authSession.user.id);
     if (creditResult.used) {
       addWatermark = false;
+      consumedCredit = true;
     } else if (freeAvailable) {
-      // Fall back to free daily (watermark)
-      setCookie = { name: ANON_COOKIE, value: td };
       addWatermark = true;
     } else {
       return NextResponse.json({ ok: false, error: "no_credits" }, { status: 402 });
     }
   } else {
-    // Anonymous: free daily only
+    // Anonymous: free daily only (fingerprint-based)
     if (freeAvailable) {
-      setCookie = { name: ANON_COOKIE, value: td };
       addWatermark = true;
     } else {
       return NextResponse.json({ ok: false, error: "no_credits" }, { status: 402 });
@@ -134,20 +157,26 @@ export async function POST(req: Request) {
     }
 
     const json = (await res.json()) as unknown;
-    const image = extractImageDataUrlFromCompletion(json);
+    let image = extractImageDataUrlFromCompletion(json);
     if (!image) {
       console.error("generate-share no_image", JSON.stringify(json).slice(0, 2500));
       return NextResponse.json({ ok: false, error: "no_image" }, { status: 502 });
     }
 
+    // Apply watermark for free users
+    if (addWatermark && image) {
+      try {
+        image = await addWatermarkToImage(image);
+      } catch (e) {
+        console.error("watermark error", e);
+        // Return unwatermarked rather than failing
+      }
+    }
+
     const response = NextResponse.json({ ok: true, image, watermark: addWatermark });
-    if (setCookie) {
-      response.cookies.set(setCookie.name, setCookie.value, {
-        httpOnly: true,
-        sameSite: "lax",
-        maxAge: 86400,
-        path: "/",
-      });
+    // Record anonymous free usage in DB (skip if paid credit was used)
+    if (!consumedCredit) {
+      await recordAnonUsage(fingerprint, td);
     }
     return response;
   } catch (e) {

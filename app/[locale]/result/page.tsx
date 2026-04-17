@@ -315,6 +315,7 @@ export default function ResultPage() {
                   </Button>
                 )}
               </div>
+              <p className="text-[11px] text-white/35">{t("aiShareFreeHint")}</p>
               {aiError && <p className="text-xs text-rose-300/90">{aiError}</p>}
               {aiImage && (
                 <Image

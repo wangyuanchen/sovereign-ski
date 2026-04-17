@@ -2,27 +2,41 @@
 
 import { useCallback, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { Loader2, Mountain, Upload } from "lucide-react";
+import { Loader2, Mountain, Upload, CheckCircle2 } from "lucide-react";
 import type { ParsedSkiPartial } from "@/lib/types";
-import { STORAGE_KEY, parsedPartialToSession } from "@/lib/types";
+import { parsedPartialToSession } from "@/lib/types";
+import type { SkiSessionFormValues } from "@/lib/schema";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "@/i18n/navigation";
 
 const ACCEPT = "image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif";
 const MAX_BYTES = 10 * 1024 * 1024;
 
+export type UploadStep = "idle" | "uploading" | "parsing" | "parsed" | "rendering" | "done";
+
 type Props = {
-  onManual: () => void;
+  onManual?: () => void;
+  /** Return parsed session data inline (single-page flow) */
+  onParsed?: (session: SkiSessionFormValues) => void;
   className?: string;
 };
 
-export function UploadZone({ onManual, className }: Props) {
-  const router = useRouter();
+const STEP_KEYS: Record<Exclude<UploadStep, "idle">, string> = {
+  uploading: "stepUploading",
+  parsing: "stepParsing",
+  parsed: "stepParsed",
+  rendering: "stepRendering",
+  done: "stepDone",
+};
+
+const ALL_STEPS: Exclude<UploadStep, "idle">[] = ["uploading", "parsing", "parsed", "rendering", "done"];
+
+export function UploadZone({ onManual, onParsed, className }: Props) {
   const locale = useLocale();
   const t = useTranslations("upload");
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
+  const [step, setStep] = useState<UploadStep>("idle");
   const [drag, setDrag] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,10 +56,15 @@ export function UploadZone({ onManual, className }: Props) {
       }
 
       setBusy(true);
+      setStep("uploading");
       try {
         const fd = new FormData();
         fd.set("file", file);
         fd.set("locale", locale);
+
+        await new Promise((r) => setTimeout(r, 400));
+        setStep("parsing");
+
         const res = await fetch("/api/parse", { method: "POST", body: fd });
         const json = (await res.json()) as {
           ok?: boolean;
@@ -54,20 +73,32 @@ export function UploadZone({ onManual, className }: Props) {
 
         if (!res.ok || !json.ok || !json.data) {
           setError(t("errParse"));
-          onManual();
+          setStep("idle");
+          onManual?.();
           return;
         }
 
-        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(parsedPartialToSession(json.data)));
-        router.push("/result");
+        setStep("parsed");
+        await new Promise((r) => setTimeout(r, 600));
+
+        setStep("rendering");
+        const session = parsedPartialToSession(json.data);
+        await new Promise((r) => setTimeout(r, 400));
+
+        setStep("done");
+
+        if (onParsed) {
+          onParsed(session);
+        }
       } catch {
         setError(t("errNetwork"));
-        onManual();
+        setStep("idle");
+        onManual?.();
       } finally {
         setBusy(false);
       }
     },
-    [locale, onManual, router, t],
+    [locale, onManual, onParsed, t],
   );
 
   const onInput = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -134,12 +165,41 @@ export function UploadZone({ onManual, className }: Props) {
             {t("choose")}
           </Button>
 
-          {busy && (
-            <div className="flex items-center gap-2 text-sm text-accent">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              {t("parsing")}
+          {/* Progress steps */}
+          {step !== "idle" && (
+            <div className="w-full max-w-xs space-y-1.5 text-left">
+              {ALL_STEPS.map((s) => {
+                const idx = ALL_STEPS.indexOf(s);
+                const currentIdx = ALL_STEPS.indexOf(step as typeof s);
+                const isActive = s === step;
+                const isDone = idx < currentIdx;
+                const isPending = idx > currentIdx;
+
+                if (isPending) return null;
+
+                return (
+                  <div
+                    key={s}
+                    className={cn(
+                      "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-all",
+                      isActive && "bg-accent/10 text-accent font-medium",
+                      isDone && "text-accent/60",
+                    )}
+                  >
+                    {isDone ? (
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-accent/70" />
+                    ) : isActive && s !== "done" && s !== "parsed" ? (
+                      <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-accent" />
+                    )}
+                    {t(STEP_KEYS[s])}
+                  </div>
+                );
+              })}
             </div>
           )}
+
           {error && <p className="rounded-lg bg-rose-500/10 px-3 py-1.5 text-sm text-rose-300">{error}</p>}
         </div>
       </div>
