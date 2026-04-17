@@ -50,8 +50,23 @@ export async function addWatermarkToImage(dataUrl: string): Promise<string> {
 
   const result = await img
     .composite([{ input: overlaySvg, top: 0, left: 0 }])
-    .png()
+    .resize({ width: Math.min(w, 1080), withoutEnlargement: true })
+    .jpeg({ quality: 80 })
     .toBuffer();
 
-  return `data:image/png;base64,${result.toString("base64")}`;
+  return `data:image/jpeg;base64,${result.toString("base64")}`;
+}
+
+/**
+ * Compress a data URL image to JPEG ≤1080w to stay under Vercel payload limits.
+ */
+export async function compressDataUrl(dataUrl: string): Promise<string> {
+  const match = dataUrl.match(/^data:(image\/\w+);base64,(.+)$/);
+  if (!match) return dataUrl;
+  const buf = Buffer.from(match[2], "base64");
+  const result = await sharp(buf)
+    .resize({ width: 1080, withoutEnlargement: true })
+    .jpeg({ quality: 82 })
+    .toBuffer();
+  return `data:image/jpeg;base64,${result.toString("base64")}`;
 }

@@ -11,7 +11,7 @@ import { buildShareImagePrompt } from "@/lib/share-image-prompt";
 import { auth } from "@/lib/auth";
 import { consumeCredit } from "@/lib/credits";
 import { getAnonFingerprint } from "@/lib/fingerprint";
-import { addWatermarkToImage } from "@/lib/watermark";
+import { addWatermarkToImage, compressDataUrl } from "@/lib/watermark";
 import { getDb } from "@/lib/db";
 import { anonDailyUsage } from "@/lib/db/schema";
 
@@ -169,7 +169,13 @@ export async function POST(req: Request) {
         image = await addWatermarkToImage(image);
       } catch (e) {
         console.error("watermark error", e);
-        // Return unwatermarked rather than failing
+      }
+    } else {
+      // Compress paid images too to stay under Vercel 4.5MB payload limit
+      try {
+        image = await compressDataUrl(image);
+      } catch (e) {
+        console.error("compress error", e);
       }
     }
 
