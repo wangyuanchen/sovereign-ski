@@ -23,22 +23,16 @@ export const ACCEPT_STRING =
  */
 export async function toModelDataUrl(
   buf: Buffer,
-  mimeType: string,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _mimeType: string,
 ): Promise<{ dataUrl: string; mime: string }> {
-  const isHeic =
-    mimeType === "image/heic" || mimeType === "image/heif";
-
-  let outputBuf: Buffer;
-  let outputMime: string;
-
-  if (isHeic) {
-    outputBuf = await sharp(buf).jpeg({ quality: 90 }).toBuffer();
-    outputMime = "image/jpeg";
-  } else {
-    outputBuf = buf;
-    outputMime = mimeType;
-  }
+  // Always resize + compress to JPEG to keep payloads small
+  const outputBuf = await sharp(buf)
+    .resize({ width: 1024, height: 1024, fit: "inside", withoutEnlargement: true })
+    .jpeg({ quality: 80 })
+    .toBuffer();
+  const mime = "image/jpeg";
 
   const b64 = outputBuf.toString("base64");
-  return { dataUrl: `data:${outputMime};base64,${b64}`, mime: outputMime };
+  return { dataUrl: `data:${mime};base64,${b64}`, mime };
 }

@@ -51,7 +51,7 @@ export async function addWatermarkToImage(dataUrl: string): Promise<string> {
   const result = await img
     .composite([{ input: overlaySvg, top: 0, left: 0 }])
     .resize({ width: Math.min(w, 1080), withoutEnlargement: true })
-    .jpeg({ quality: 80 })
+    .jpeg({ quality: 72 })
     .toBuffer();
 
   return `data:image/jpeg;base64,${result.toString("base64")}`;
@@ -66,7 +66,7 @@ export async function compressDataUrl(dataUrl: string): Promise<string> {
   const buf = Buffer.from(match[2], "base64");
   const result = await sharp(buf)
     .resize({ width: 1080, withoutEnlargement: true })
-    .jpeg({ quality: 82 })
+    .jpeg({ quality: 75 })
     .toBuffer();
   return `data:image/jpeg;base64,${result.toString("base64")}`;
 }
