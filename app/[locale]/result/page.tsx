@@ -134,12 +134,13 @@ export default function ResultPage() {
         setAiError(ta("noCredits"));
         return;
       }
-      const json = (await res.json()) as { ok?: boolean; image?: string; watermark?: boolean };
-      if (!res.ok || !json.ok || typeof json.image !== "string") {
+      if (!res.ok) {
         setAiError(t("aiShareErr"));
         return;
       }
-      setAiImage(json.image);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      setAiImage(url);
     } catch {
       setAiError(t("aiShareErr"));
     } finally {
@@ -154,7 +155,7 @@ export default function ResultPage() {
       try {
         const res = await fetch(aiImage);
         const blob = await res.blob();
-        const file = new File([blob], `ski-share-${v.dayDate}.png`, { type: "image/png" });
+        const file = new File([blob], `ski-share-${v.dayDate}.jpg`, { type: "image/jpeg" });
         if (navigator.canShare?.({ files: [file] })) {
           await navigator.share({ files: [file] });
           setSaveToast(t("savedHint"));

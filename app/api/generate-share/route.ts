@@ -11,7 +11,7 @@ import { buildShareImagePrompt } from "@/lib/share-image-prompt";
 import { auth } from "@/lib/auth";
 import { consumeCredit } from "@/lib/credits";
 import { getAnonFingerprint } from "@/lib/fingerprint";
-import { addWatermarkToImage, compressDataUrl } from "@/lib/watermark";
+import { watermarkToBuffer, compressToBuffer, dataUrlToBuffer } from "@/lib/watermark";
 import { getDb } from "@/lib/db";
 import { anonDailyUsage } from "@/lib/db/schema";
 
@@ -157,34 +157,44 @@ export async function POST(req: Request) {
     }
 
     const json = (await res.json()) as unknown;
-    let image = extractImageDataUrlFromCompletion(json);
+    const image = extractImageDataUrlFromCompletion(json);
     if (!image) {
       console.error("generate-share no_image", JSON.stringify(json).slice(0, 2500));
       return NextResponse.json({ ok: false, error: "no_image" }, { status: 502 });
     }
 
-    // Apply watermark for free users
-    if (addWatermark && image) {
+    // Convert data URL to buffer, apply watermark or compress, return as binary
+    let imgBuffer: Buffer;
+    if (addWatermark) {
       try {
-        image = await addWatermarkToImage(image);
+        imgBuffer = await watermarkToBuffer(image);
       } catch (e) {
         console.error("watermark error", e);
+        imgBuffer = dataUrlToBuffer(image);
       }
     } else {
-      // Compress paid images too to stay under Vercel 4.5MB payload limit
       try {
-        image = await compressDataUrl(image);
+        imgBuffer = await compressToBuffer(image);
       } catch (e) {
         console.error("compress error", e);
+        imgBuffer = dataUrlToBuffer(image);
       }
     }
 
-    const response = NextResponse.json({ ok: true, image, watermark: addWatermark });
     // Record anonymous free usage in DB (skip if paid credit was used)
     if (!consumedCredit) {
       await recordAnonUsage(fingerprint, td);
     }
-    return response;
+
+    // Return binary image directly — avoids base64 bloat and Vercel payload limit
+    return new Response(new Uint8Array(imgBuffer), {
+      status: 200,
+      headers: {
+        "Content-Type": "image/jpeg",
+        "Content-Length": String(imgBuffer.byteLength),
+        "X-Watermark": addWatermark ? "1" : "0",
+      },
+    });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ ok: false, error: "upstream" }, { status: 502 });
